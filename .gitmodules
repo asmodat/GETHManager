@@ -2,3 +2,7 @@
 	path = Asmodat-Standard
 	url = git@github.com:asmodat/Asmodat-Standard.git
 	branch = master
+[submodule "AWSWrapper"]
+	path = AWSWrapper
+	url = git@github.com:asmodat/AWSWrapper.git
+	branch = master
