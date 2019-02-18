@@ -1,0 +1,4 @@
+[submodule "Asmodat-Standard"]
+	path = Asmodat-Standard
+	url = git@github.com:asmodat/Asmodat-Standard.git
+	branch = master
