@@ -4,5 +4,5 @@
 	branch = master
 [submodule "AWSWrapper"]
 	path = AWSWrapper
-	url = git@github.com:asmodat/AWSWrapper.git
+	url = C:\\Users\\asmodat\\Documents\\Visual Studio 2017\\Projects\\AWSWrapper
 	branch = master
