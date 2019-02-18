@@ -29,9 +29,12 @@ namespace GEthManager.Controllers
         [HttpGet("ping")]
         public string Ping() => "pong";
 
-        [HttpGet("EtherscanHeight")]
-        public Task<long> Height() => _bsm.TryFetchEtherscanBlockHeight();
-        
+        [HttpGet("EtherScanHeight")]
+        public Task<long> EtherScanHeight() => _bsm.TryFetchEtherscanBlockHeight();
+
+        [HttpGet("InfuraHeight")]
+        public Task<long> InfuraHeight() => _bsm.TryFetchInfuraBlockHeight();
+
 
         /*//Debug Only
         [HttpGet("env")]

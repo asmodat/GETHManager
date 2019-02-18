@@ -18,6 +18,10 @@ namespace GEthManager.Processing
             _cfg = cfg.Value;
         }
 
+        /// <summary>
+        /// EtherScan Rate limit is 5 requests per second
+        /// </summary>
+        /// <returns></returns>
         public async Task<etherscanBlockNrResponse> FetchEtherscanBlockResponse()
         {
             if (etherscanResponse != null && (DateTime.UtcNow - etherscanResponse.TimeStamp).TotalSeconds < _cfg.apiRequestRateLimi)
@@ -41,6 +45,51 @@ namespace GEthManager.Processing
             try
             {
                 response = await FetchEtherscanBlockResponse();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to fetch etherscan block height.");
+                Console.WriteLine(ex.JsonSerializeAsPrettyException());
+                return -1;
+            }
+
+            var nr = response.TryGetBlockNumber();
+
+            if (nr > 0)
+                etherscanResponse = response;
+
+            return nr;
+        }
+
+        /// <summary>
+        /// Infure has no Rate limit, but requests should be rate limited to up 10 requests per second
+        /// </summary>
+        /// <returns></returns>
+        public async Task<etherscanBlockNrResponse> FetchInfuraBlockResponse()
+        {
+            if (etherscanResponse != null && (DateTime.UtcNow - etherscanResponse.TimeStamp).TotalSeconds < _cfg.apiRequestRateLimi)
+                return etherscanResponse;
+
+            using (var client = new HttpClient() { Timeout = TimeSpan.FromSeconds(_cfg.defaultHttpClientTimeout) })
+            {
+                var requestUri = _cfg.GetInfuraConnectionString() + _cfg.infuraBlockHeightFetchQuery;
+                var response = await client.GET(
+                    requestUri: requestUri,
+                    ensureStatusCode: System.Net.HttpStatusCode.OK);
+
+                //response.TimeStamp = DateTime.UtcNow;
+                //return response;
+
+                return null;
+            }
+        }
+
+        public async Task<long> TryFetchInfuraBlockHeight()
+        {
+            etherscanBlockNrResponse response;
+            try
+            {
+                response = await FetchInfuraBlockResponse();
             }
             catch (Exception ex)
             {
