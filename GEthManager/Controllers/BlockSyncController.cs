@@ -6,6 +6,7 @@ using GEthManager.Processing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Options;
+using GEthManager.Model;
 
 namespace GEthManager.Controllers
 {
@@ -26,23 +27,53 @@ namespace GEthManager.Controllers
             _cfg = cfg.Value;
         }
 
-        [HttpGet("ping")]
-        public string Ping() => "pong";
 
         [HttpGet("EtherScanHeight")]
-        public Task<long> EtherScanHeight() => _bsm.TryFetchEtherscanBlockHeight();
+        public IActionResult EtherScanHeight()
+        {
+            var bnr = _bsm.GetEtherScanBlockNr().TryGetBlockNumber();
+
+            if(bnr <= 0)
+                return StatusCode(StatusCodes.Status500InternalServerError);
+
+            return StatusCode(200, bnr);
+        }
 
         [HttpGet("InfuraHeight")]
-        public Task<long> InfuraHeight() => _bsm.TryFetchInfuraBlockHeight();
+        public IActionResult InfuraHeight() {
+
+            var bnr = _bsm.GetInfuraBlockNr().TryGetBlockNumber();
+
+            if (bnr <= 0)
+                return StatusCode(StatusCodes.Status500InternalServerError);
+
+            return StatusCode(200, bnr);
+        }
 
 
-        /*//Debug Only
-        [HttpGet("env")]
-        public string Environment()
-            => System.Environment.GetEnvironmentVariables().JsonSerialize(Newtonsoft.Json.Formatting.Indented);
+        [HttpGet("PublicHeight")]
+        public IActionResult PublicHeight()
+        {
 
-        [HttpGet("get")]
-        public Task<string> Get([FromQuery]string url)
-            => HttpHelper.GET(url, System.Net.HttpStatusCode.OK); //*/
+            var bnr = _bsm.GetPublicBlockNr().TryGetBlockNumber();
+
+            if (bnr <= 0)
+                return StatusCode(StatusCodes.Status500InternalServerError);
+
+            return StatusCode(200, bnr);
+        }
+
+        [HttpGet("PrivateHeight")]
+        public IActionResult PrivateHeight()
+        {
+
+            var bnr = _bsm.GetPrivateBlockNr().TryGetBlockNumber();
+
+            if (bnr <= 0)
+                return StatusCode(StatusCodes.Status500InternalServerError);
+
+            return StatusCode(200, bnr);
+        }
+
     }
 }

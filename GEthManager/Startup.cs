@@ -6,6 +6,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using System.IO;
 using AsmodatStandard.Extensions;
+using GEthManager.Services;
 
 namespace GEthManager
 {
@@ -61,6 +62,11 @@ namespace GEthManager
             services.Configure<ManagerConfig>(Configuration.GetSection("ManagerConfig"));
 
             services.AddSingleton<BlockSyncManager>();
+
+            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, EtherScanService>();
+            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, InfuraScanService>();
+            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, PublicScanService>();
+            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, PrivateScanService>();
 
         }
 
