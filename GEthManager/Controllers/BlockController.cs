@@ -10,14 +10,14 @@ using GEthManager.Model;
 
 namespace GEthManager.Controllers
 {
-    [Route("api/BlockSync")]
-    public class BlockSyncController : Controller
+    [Route("api/Block")]
+    public class BlockController : Controller
     {
         private readonly ManagerConfig _cfg;
 
         private BlockSyncManager _bsm;
 
-        public BlockSyncController(
+        public BlockController(
             IHttpContextAccessor accessor,
             IHostingEnvironment hostingEnvironment,
             BlockSyncManager bsm,
@@ -75,5 +75,33 @@ namespace GEthManager.Controllers
             return StatusCode(200, bnr);
         }
 
+        /// <summary>
+        /// Last Height
+        /// </summary>
+        /// <returns></returns>
+        [HttpGet("Height")]
+        public IActionResult Height()
+        {
+            var bnr = _bsm.GetLastBlockNr().TryGetBlockNumber();
+
+            if (bnr <= 0)
+                return StatusCode(StatusCodes.Status500InternalServerError);
+
+            return StatusCode(200, bnr);
+        }
+
+        [HttpGet("eth_blockNumber")]
+        public IActionResult eth_blockNumber()
+        {
+            var ebn = _bsm.GetLastBlockNr();
+
+            if (ebn == null || ebn.TryGetBlockNumber() <= 0)
+                return StatusCode(StatusCodes.Status500InternalServerError);
+
+            return StatusCode(200, ebn);
+        }
+
+        [HttpGet("Heights")]
+        public IActionResult HeightRapport() => StatusCode(200, _bsm.GetAllBlocksNr());
     }
 }

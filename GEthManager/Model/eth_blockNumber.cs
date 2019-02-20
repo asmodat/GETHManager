@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using AsmodatStandard.Extensions;
+using Newtonsoft.Json;
 
 namespace GEthManager.Model
 {
@@ -27,11 +28,15 @@ namespace GEthManager.Model
     /// </summary>
     public class eth_blockNumber
     {
+        public string name { get; set; }
+
         public DateTime TimeStamp { get; set; }
 
         public string jsonrpc { get; set; }
         public long? id { get; set; }
         public string result { get; set; }
+
+        public long blockNumber { get => this.TryGetBlockNumber(); }
 
         public long GetBlockNumber()
             => result.HexToLong();

@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using System.Net.Http;
 using GEthManager.Model;
 using System.Text;
+using System.Linq;
 
 namespace GEthManager.Processing
 {
@@ -27,13 +28,13 @@ namespace GEthManager.Processing
         /// EtherScan Rate limit is 5 requests per second
         /// </summary>
         /// <returns></returns>
-        public async Task<eth_blockNumber> FetchEtherscanBlockResponse()
+        public async Task<eth_blockNumber> FetchEtherscanBlockResponse(string requestUri)
         {
             using (var client = new HttpClient() { Timeout = TimeSpan.FromSeconds(_cfg.defaultHttpClientTimeout) })
             {
-                var requestUri = _cfg.GetEtherscanConnectionString() + _cfg.etherscanBlockHeightFetchQuery;
+                
                 var response = await client.GET<eth_blockNumber>(
-                    requestUri: requestUri, 
+                    requestUri: requestUri,
                     ensureStatusCode: System.Net.HttpStatusCode.OK);
 
                 response.TimeStamp = DateTime.UtcNow;
@@ -45,15 +46,15 @@ namespace GEthManager.Processing
         /// Infura has no Rate limit, but requests should be rate limited to up 10 requests per second
         /// </summary>
         /// <returns></returns>
-        public async Task<eth_blockNumber> FetchInfuraBlockResponse()
+        public async Task<eth_blockNumber> FetchInfuraBlockResponse(string requestUri)
         {
             using (var client = new HttpClient() { Timeout = TimeSpan.FromSeconds(_cfg.defaultHttpClientTimeout) })
             {
-                var requestUri = _cfg.GetInfuraConnectionString() + _cfg.infuraBlockHeightFetchQuery;
+                
 
                 var content = new StringContent(
-                    _cfg.infuraBlockHeightFetchContent, 
-                    encoding: Encoding.UTF8, 
+                    _cfg.infuraBlockHeightFetchContent,
+                    encoding: Encoding.UTF8,
                     mediaType: "application/json");
 
                 var response = await client.POST<eth_blockNumber>(
@@ -88,7 +89,8 @@ namespace GEthManager.Processing
             eth_blockNumber response;
             try
             {
-                response = await FetchInfuraBlockResponse();
+                var requestUri = _cfg.GetInfuraConnectionString() + _cfg.infuraBlockHeightFetchQuery;
+                response = await FetchInfuraBlockResponse(requestUri);
             }
             catch (Exception ex)
             {
@@ -101,6 +103,7 @@ namespace GEthManager.Processing
 
             if (nr > (infuraBlockNumber?.TryGetBlockNumber() ?? 0))
             {
+                response.name = "infura";
                 infuraBlockNumber = response;
                 return true;
             }
@@ -112,7 +115,8 @@ namespace GEthManager.Processing
             eth_blockNumber response;
             try
             {
-                response = await FetchEtherscanBlockResponse();
+                var requestUri = _cfg.GetEtherscanConnectionString() + _cfg.etherscanBlockHeightFetchQuery;
+                response = await FetchEtherscanBlockResponse(requestUri);
             }
             catch (Exception ex)
             {
@@ -125,6 +129,7 @@ namespace GEthManager.Processing
 
             if (nr > (etherscanBlockNumber?.TryGetBlockNumber() ?? 0))
             {
+                response.name = "etherscan";
                 etherscanBlockNumber = response;
                 return true;
             }
@@ -150,6 +155,7 @@ namespace GEthManager.Processing
 
             if (nr > (publicBlockNumber?.TryGetBlockNumber() ?? 0))
             {
+                response.name = "public";
                 publicBlockNumber = response;
                 return true;
             }
@@ -175,6 +181,7 @@ namespace GEthManager.Processing
 
             if (nr > (privateBlockNumber?.TryGetBlockNumber() ?? 0))
             {
+                response.name = "private";
                 privateBlockNumber = response;
                 return true;
             }
@@ -186,5 +193,45 @@ namespace GEthManager.Processing
         public eth_blockNumber GetEtherScanBlockNr() => etherscanBlockNumber;
         public eth_blockNumber GetPublicBlockNr() => publicBlockNumber;
         public eth_blockNumber GetPrivateBlockNr() => privateBlockNumber;
+
+
+        public eth_blockNumber[] GetAllBlocksNr() => new eth_blockNumber[] {
+                infuraBlockNumber,
+                etherscanBlockNumber,
+                publicBlockNumber,
+                privateBlockNumber
+            };
+
+        public eth_blockNumber GetLastBlockNr()
+        {
+            var blocks = GetAllBlocksNr();
+
+            eth_blockNumber max = null;
+            foreach(var block in blocks)
+            {
+                if (block == null)
+                    continue;
+
+                if(max == null)
+                {
+                    max = block;
+                    continue;
+                }
+
+                if (max.blockNumber < block.blockNumber)
+                {
+                    max = block;
+                    continue;
+                }
+
+                if (max.blockNumber == block.blockNumber)
+                {
+                    if (max.TimeStamp > block.TimeStamp)
+                        max = block;
+                }
+            }
+
+            return max;
+        }
     }
 }
