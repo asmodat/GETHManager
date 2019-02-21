@@ -39,6 +39,20 @@ namespace GEthManager.Processing
         public int publicRequestDelay { get; set; } = 1;
         public int privateRequestDelay { get; set; } = 1;
 
+        public int cpuCountSamples { get; set; } = 10000;
+        /// <summary>
+        /// miliseconds
+        /// </summary>
+        public int cpuCountIntensity { get; set; } = 500;
+
+        public int ramCountSamples { get; set; } = 10000;
+        /// <summary>
+        /// miliseconds
+        /// </summary>
+        public int ramCountIntensity { get; set; } = 500;
+
+        public int diskCheckIntensity { get; set; } = 2500;
+
         public void RotateApiKeys()
         {
             if (etherscanApiKeys.IsNullOrEmpty())

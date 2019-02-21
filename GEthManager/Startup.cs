@@ -62,11 +62,15 @@ namespace GEthManager
             services.Configure<ManagerConfig>(Configuration.GetSection("ManagerConfig"));
 
             services.AddSingleton<BlockSyncManager>();
+            services.AddSingleton<PerformanceManager>();
 
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, EtherScanService>();
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, InfuraScanService>();
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, PublicScanService>();
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, PrivateScanService>();
+            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, CpuPerformanceService>();
+            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, RamPerformanceService>();
+            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, DiskPerformanceService>();
 
         }
 

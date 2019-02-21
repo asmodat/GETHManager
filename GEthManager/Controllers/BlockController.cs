@@ -36,43 +36,40 @@ namespace GEthManager.Controllers
             if(bnr <= 0)
                 return StatusCode(StatusCodes.Status500InternalServerError);
 
-            return StatusCode(200, bnr);
+            return StatusCode(StatusCodes.Status200OK, bnr);
         }
 
         [HttpGet("InfuraHeight")]
-        public IActionResult InfuraHeight() {
-
+        public IActionResult InfuraHeight()
+        {
             var bnr = _bsm.GetInfuraBlockNr().TryGetBlockNumber();
 
             if (bnr <= 0)
                 return StatusCode(StatusCodes.Status500InternalServerError);
 
-            return StatusCode(200, bnr);
+            return StatusCode(StatusCodes.Status200OK, bnr);
         }
-
 
         [HttpGet("PublicHeight")]
         public IActionResult PublicHeight()
         {
-
             var bnr = _bsm.GetPublicBlockNr().TryGetBlockNumber();
 
             if (bnr <= 0)
                 return StatusCode(StatusCodes.Status500InternalServerError);
 
-            return StatusCode(200, bnr);
+            return StatusCode(StatusCodes.Status200OK, bnr);
         }
 
         [HttpGet("PrivateHeight")]
         public IActionResult PrivateHeight()
         {
-
             var bnr = _bsm.GetPrivateBlockNr().TryGetBlockNumber();
 
             if (bnr <= 0)
                 return StatusCode(StatusCodes.Status500InternalServerError);
 
-            return StatusCode(200, bnr);
+            return StatusCode(StatusCodes.Status200OK, bnr);
         }
 
         /// <summary>
@@ -87,7 +84,7 @@ namespace GEthManager.Controllers
             if (bnr <= 0)
                 return StatusCode(StatusCodes.Status500InternalServerError);
 
-            return StatusCode(200, bnr);
+            return StatusCode(StatusCodes.Status200OK, bnr);
         }
 
         [HttpGet("eth_blockNumber")]
@@ -98,7 +95,7 @@ namespace GEthManager.Controllers
             if (ebn == null || ebn.TryGetBlockNumber() <= 0)
                 return StatusCode(StatusCodes.Status500InternalServerError);
 
-            return StatusCode(200, ebn);
+            return StatusCode(StatusCodes.Status200OK, ebn);
         }
 
         [HttpGet("Heights")]

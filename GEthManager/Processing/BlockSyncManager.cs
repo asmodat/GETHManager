@@ -202,6 +202,10 @@ namespace GEthManager.Processing
                 privateBlockNumber
             };
 
+        /// <summary>
+        /// Returns Last Detected eth_blockNumber
+        /// </summary>
+        /// <returns>null or eth_blockNumber object</returns>
         public eth_blockNumber GetLastBlockNr()
         {
             var blocks = GetAllBlocksNr();
@@ -224,6 +228,7 @@ namespace GEthManager.Processing
                     continue;
                 }
 
+                //The most early detected block timestamp is used to keep consistent results of the API
                 if (max.blockNumber == block.blockNumber)
                 {
                     if (max.TimeStamp > block.TimeStamp)
