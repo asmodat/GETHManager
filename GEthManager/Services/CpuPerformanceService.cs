@@ -16,7 +16,7 @@ namespace GEthManager.Services
     {
         private readonly ManagerConfig _cfg;
         private PerformanceManager _pm;
-        private readonly DateTime timestamp;
+        private DateTime timestamp;
 
         public CpuPerformanceService(IOptions<ManagerConfig> cfg, PerformanceManager pm) 
         {
@@ -38,6 +38,7 @@ namespace GEthManager.Services
 
             await Task.Delay(delay);
             _pm.TryUpdateCpuPerformanceCounter();
+            timestamp = DateTime.UtcNow;
         }
     }
 }

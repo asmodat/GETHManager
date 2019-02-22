@@ -53,6 +53,28 @@ namespace GEthManager.Processing
 
         public int diskCheckIntensity { get; set; } = 2500;
 
+        public int processesCheckIntensity { get; set; } = 5000;
+        public int gethReStartIntensity { get; set; } = 2500;
+
+        /// <summary>
+        /// example: geth - requires to setup PATH varaibles
+        /// </summary>
+        public string gethStartFileName { get; set; }
+
+        /// <summary>
+        /// example: "--syncmode \"fast\" --rpc --rpcapi=\"db,eth,net,web3,personal,txpool\" --cache 2024 --maxpeers 50 --verbosity 3 --rpcport 8545 --rpcaddr \"127.0.0.1\" --rpccorsdomain \"*\" --rpcvhosts \"*\""
+        /// </summary>
+        public string gethStartArguments { get; set; }
+        public int maxGethOutputLogSize { get; set; } = 5*1024*1024;
+        public int maxGethErrorLogSize { get; set; } = 5 * 1024 * 1024;
+
+
+        public string[] gethStartKillProcesses { get; set; }
+        public bool enableGethService { get; set; } = true;
+        public bool gethEnableConsole { get; set; } = false;
+        public string gethOutputLog { get; set; }
+        public string gethErrorLog { get; set; }
+
         public void RotateApiKeys()
         {
             if (etherscanApiKeys.IsNullOrEmpty())

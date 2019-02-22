@@ -36,7 +36,7 @@ namespace GEthManager.Controllers
         public string Version()
             => $"GETH-MANGER API v{_cfg.version}, ServerTime: {DateTime.UtcNow.ToLongDateTimeString()}";
 
-        /*//Debug Only
+        /*//Debug Only - WARINIG! this is extreamly unsafe to uncomment this section in production
         [HttpGet("env")]
         public string Environment()
             => System.Environment.GetEnvironmentVariables().JsonSerialize(Newtonsoft.Json.Formatting.Indented);

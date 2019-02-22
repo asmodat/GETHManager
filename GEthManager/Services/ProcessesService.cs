@@ -12,32 +12,32 @@ using GEthManager.Processing;
 
 namespace GEthManager.Services
 {
-    public class RamPerformanceService : BackgroundService
+    public class ProcessesService : BackgroundService
     {
         private readonly ManagerConfig _cfg;
-        private PerformanceManager _pm;
         private DateTime timestamp;
+        private readonly ProcessManager _pm;
 
-        public RamPerformanceService(IOptions<ManagerConfig> cfg, PerformanceManager pm) 
+        public ProcessesService(IOptions<ManagerConfig> cfg, ProcessManager pm) 
         {
             _pm = pm;
             _cfg = cfg.Value;
             timestamp = DateTime.UtcNow;
         }
 
-
         protected override async Task Process()
         {
-            var delay = 10;
-            if ((DateTime.UtcNow - timestamp).TotalSeconds < _cfg.ramCountIntensity)
+            var delay = 100;
+            var intensity = _cfg.processesCheckIntensity;
+            if ((DateTime.UtcNow - timestamp).TotalSeconds < intensity)
             {
-                var timeUntilNextExecution = _cfg.ramCountIntensity - (DateTime.UtcNow - timestamp).TotalMilliseconds;
+                var timeUntilNextExecution = intensity - (DateTime.UtcNow - timestamp).TotalMilliseconds;
                 if (timeUntilNextExecution > delay)
                     delay = (int)timeUntilNextExecution;
             }
 
             await Task.Delay(delay);
-            _pm.TryUpdateRamPerformanceCounter();
+            _pm.TryUpdateRunningProcessesList();
             timestamp = DateTime.UtcNow;
         }
     }

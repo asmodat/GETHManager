@@ -13,6 +13,7 @@ using MathNet.Numerics.Statistics;
 using System.Collections.Generic;
 using System.Threading;
 using System.IO;
+using GEthManager.Ententions;
 
 namespace GEthManager.Processing
 {

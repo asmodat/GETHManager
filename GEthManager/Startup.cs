@@ -7,6 +7,8 @@ using Microsoft.Extensions.DependencyInjection;
 using System.IO;
 using AsmodatStandard.Extensions;
 using GEthManager.Services;
+using Microsoft.AspNetCore.Authentication;
+using GEthManager.Handlers;
 
 namespace GEthManager
 {
@@ -63,15 +65,21 @@ namespace GEthManager
 
             services.AddSingleton<BlockSyncManager>();
             services.AddSingleton<PerformanceManager>();
+            services.AddSingleton<ProcessManager>();
 
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, EtherScanService>();
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, InfuraScanService>();
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, PublicScanService>();
-            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, PrivateScanService>();
+            //services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, PrivateScanService>();
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, CpuPerformanceService>();
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, RamPerformanceService>();
             services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, DiskPerformanceService>();
+            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, ProcessesService>();
+            services.AddSingleton<Microsoft.Extensions.Hosting.IHostedService, GethProcessService>();
 
+            // configure basic authentication 
+            services.AddAuthentication("BasicAuthentication")
+                .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", null);
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -85,6 +93,8 @@ namespace GEthManager
             app.UseStaticFiles();
 
             app.UseCors("AllowAll");
+
+            app.UseAuthentication();
 
             app.UseMvc(routes => {
                 routes.MapRoute("default", "{controller=Home}/{action=Index}/{id?}");
