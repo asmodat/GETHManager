@@ -10,16 +10,23 @@ namespace GEthManager.Extentions
             if (p == null)
                 return null;
 
-            return new ProcessInfo()
+            try
             {
-                id = p.Id,
-                processName = p.ProcessName,
-                sessionId = p.SessionId,
+                return new ProcessInfo()
+                {
+                    id = p.Id,
+                    processName = p.ProcessName,
+                    sessionId = p.SessionId,
 
-                phisicalMemoryUsageMB = p.WorkingSet64 / (1024 * 1024),
-                pagedMemorySizeMB = p.PagedMemorySize64 / (1024 * 1024),
-                virtualMemorySizeMB = p.VirtualMemorySize64 / (1024 * 1024),
-            };
+                    phisicalMemoryUsageMB = p.WorkingSet64 / (1024 * 1024),
+                    pagedMemorySizeMB = p.PagedMemorySize64 / (1024 * 1024),
+                    virtualMemorySizeMB = p.VirtualMemorySize64 / (1024 * 1024),
+                };
+            }
+            catch
+            {
+                return null;
+            }
         }
     }
 }

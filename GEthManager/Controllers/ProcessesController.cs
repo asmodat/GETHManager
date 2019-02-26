@@ -34,6 +34,17 @@ namespace GEthManager.Controllers
             _cfg = cfg.Value;
         }
 
+        [HttpGet("GETH")]
+        public IActionResult GETH()
+        {
+            var result = _pm.GetGethProcessInfo();
+
+            if (result == null)
+                return StatusCode(StatusCodes.Status500InternalServerError, $"GETH Process Info is not available.");
+
+            return StatusCode(StatusCodes.Status200OK, result);
+        }
+
         [HttpGet("List")]
         public IActionResult List(string name = null)
         {
@@ -78,7 +89,6 @@ namespace GEthManager.Controllers
                 return StatusCode(StatusCodes.Status200OK, $"Success, terminated processes: {processList?.JsonSerialize()}");
             else
                 return StatusCode(StatusCodes.Status500InternalServerError, $"Failed to terminate processes with name or id '{id}'.");
-
         }
     }
 }

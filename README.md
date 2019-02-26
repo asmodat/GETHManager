@@ -17,3 +17,12 @@ curl -H "Authorization: Basic bG9naW46cGFzc3dvcmQ=" http://localhost:8000/api/Pr
 
 List Processes:
 curl -H "Authorization: Basic bG9naW46cGFzc3dvcmQ=" http://localhost:8000/api/Processes/List
+
+Geth Proccess Info:
+curl -H "Authorization: Basic bG9naW46cGFzc3dvcmQ=" http://localhost:8000/api/Processes/GETH
+
+Output Log:
+curl -H "Authorization: Basic bG9naW46cGFzc3dvcmQ=" http://localhost:8000/api/Geth/OutputLog?length=1000
+
+Error Log:
+curl -H "Authorization: Basic bG9naW46cGFzc3dvcmQ=" http://localhost:8000/api/Geth/ErrorLog?length=1000

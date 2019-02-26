@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using System;
 using AsmodatStandard.Extensions;
+using AsmodatStandard.Extensions.IO;
 using AsmodatStandard.Extensions.Collections;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
@@ -21,19 +22,55 @@ namespace GEthManager.Processing
     {
         private readonly ManagerConfig _cfg;
 
+        private DateTime gethStart = DateTime.MinValue;
         private Process geth;
+        private List<long> gethReStarts = new List<long>();
 
         private ProcessInfo[] processList;
 
+        private string _errorLog = "";
+        private string _outputLog = "";
 
         public ProcessManager(IOptions<ManagerConfig> cfg)
         {
             _cfg = cfg.Value;
         }
 
+        public string GetOutputLog(int n)
+        {
+            if (n < 0 || n > _cfg.maxGethInMemoryOutputLogLength)
+                throw new Exception($"Failed to get output log, fetch ({n}) out of range <1,{_cfg.maxGethInMemoryOutputLogLength}>");
+
+            if (_outputLog.Length <= n)
+                n = _outputLog.Length;
+
+            var startIndex = Math.Max(0, _outputLog.Length - n);
+            var str = _outputLog.Substring(startIndex, n);
+            return str.ReplaceMany(("INFO [", "\n\rINFO ["), ("WARN [", "\n\rWARN ["), ("WARNING [", "\n\rWARNING ["), ("ERROR [", "\n\rERROR ["));
+        }
+
+        public string GetErrorLog(int n)
+        {
+            if (n < 0 || n > _cfg.maxGethInMemoryErrorLogLength)
+                throw new Exception($"Failed to get output log, fetch ({n}) out of range <1,{_cfg.maxGethInMemoryErrorLogLength}>");
+
+            if (_errorLog.Length <= n)
+                n = _errorLog.Length;
+
+            var startIndex = Math.Max(0, _errorLog.Length - n);
+            var str = _errorLog.Substring(startIndex, n);
+            return str.ReplaceMany(("INFO [", "\n\rINFO ["), ("WARN [", "\n\rWARN ["), ("WARNING [", "\n\rWARNING ["), ("ERROR [", "\n\rERROR ["));
+        }
+
         public bool IsGethExited() => geth?.HasExited ?? true;
 
         public ProcessInfo[] GetRunningProcessesList() => processList;
+
+        public GEthProcessInfo GetGethProcessInfo() => new GEthProcessInfo(
+            hasExited: this.IsGethExited(),
+            process: geth,
+            gethReStarts: gethReStarts,
+            startTime: gethStart);
 
         public bool TryUpdateRunningProcessesList()
         {
@@ -120,33 +157,125 @@ namespace GEthManager.Processing
                 geth.ErrorDataReceived += Geth_ErrorDataReceived;
                 geth.Exited += Geth_Exited;
 
+                gethReStarts.Add(DateTime.UtcNow.Ticks);
+                if(gethReStarts.Count > 24 * 3600)
+                    gethReStarts.RemoveAt(0);
+
                 geth.Start();
                 geth.BeginOutputReadLine();
                 geth.BeginErrorReadLine();
+                gethStart = DateTime.UtcNow;
+
+                _outputLog += $"\n\r*** GETH Started Running at {gethStart.ToLongDateTimeString()} ***";
+                Console.WriteLine("GETH Process Was STARTED");
+                Thread.Sleep(1000);
             }
             catch (Exception ex)
             {
                 Console.WriteLine($"Failed to start GETH node at location: '{_cfg.gethStartFileName ?? "undefined"}', error: {ex.JsonSerializeAsPrettyException()}");
+                Thread.Sleep(1000);
             }
         }
 
         private void Geth_Exited(object sender, EventArgs e)
         {
-            Console.WriteLine("GETH Process Was Exited");
+            _outputLog += $"\n\r*** GETH Finished Running at {DateTime.UtcNow.ToLongDateTimeString()} ***";
+            Console.WriteLine("GETH Process Was STOPPED");
         }
 
         private void Geth_ErrorDataReceived(object sender, DataReceivedEventArgs e)
         {
             var data = e.Data;
-            if (_cfg.gethEnableConsole && !data.IsNullOrEmpty())
+
+            if (data.IsNullOrEmpty())
+                return;
+
+            if (_cfg.gethEnableConsole)
                 Console.WriteLine(data);
+
+            _errorLog += data;
+
+            if (_errorLog.Length > 1024 * 1024)
+                _errorLog = _errorLog.Substring(data.Length, _errorLog.Length - data.Length);
+
+            TryUpdateOutputLog(_cfg.gethErrorLog, data, _cfg.maxGethErrorLogSize);
         }
 
         private void Geth_OutputDataReceived(object sender, DataReceivedEventArgs e)
         {
             var data = e.Data;
-            if (_cfg.gethEnableConsole && !data.IsNullOrEmpty())
+
+            if (data.IsNullOrEmpty())
+                return;
+
+            if (_cfg.gethEnableConsole)
                 Console.WriteLine(data);
+
+            _outputLog += data;
+
+            if (_outputLog.Length > 1024 * 1024)
+                _outputLog = _outputLog.Substring(data.Length, _outputLog.Length - data.Length);
+
+            TryUpdateOutputLog(_cfg.gethOutputLog, data, _cfg.maxGethOutputLogSize);
+        }
+
+        private void TryUpdateOutputLog(string file, string data, int maxLength)
+        {
+            if (!_cfg.gethEnableLog || data.IsNullOrEmpty())
+                return;
+
+            try
+            {
+                var fi = new FileInfo(file);
+                fi.AppendAllText(data);
+
+                if (fi.Length > maxLength)
+                    fi.TrimEnd((long)(maxLength * 0.1));
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Failed to save log data to '{file}', error: {ex.Message ?? "undefined"}");
+            }
+        }
+
+        public (string output, string error) TryExecuteCommand(
+            string fileName, 
+            string arrguments,
+            bool readOutput,
+            bool readError,
+            int waitForExit_ms)
+        {
+            string output = null;
+            string error = null;
+            try
+            {
+                var process = new Process();
+                process.StartInfo.FileName = fileName;
+                process.StartInfo.Arguments = arrguments;
+                process.StartInfo.CreateNoWindow = true;
+                process.StartInfo.UseShellExecute = false;
+                process.StartInfo.RedirectStandardOutput = false;
+                process.StartInfo.RedirectStandardError = false;
+                process.Start();
+
+                if(readOutput)
+                    output = process.StandardOutput.ReadToEnd();
+
+                if (readError)
+                    output = process.StandardError.ReadToEnd();
+
+                process.WaitForExit(waitForExit_ms);
+
+                return (output, error);
+            }
+            catch(Exception ex)
+            {
+                if(error == null)
+                    error = ex.JsonSerializeAsPrettyException();
+                
+                Console.WriteLine($"Failed to execute command '{fileName} {arrguments}', error: {ex.JsonSerializeAsPrettyException()}");
+                return (output, error);
+            }
         }
     }
 }

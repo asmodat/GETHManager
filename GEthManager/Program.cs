@@ -5,6 +5,7 @@ using System;
 using System.Net;
 using AsmodatStandard.Extensions;
 using AsmodatStandard.Extensions.Collections;
+using System.Linq;
 
 namespace GEthManager
 {
@@ -19,7 +20,8 @@ namespace GEthManager
 
         public static IWebHost BuildWebHost(string[] args)
         {
-            var port = Environment.GetEnvironmentVariable("PORT").ToIntOrDefault(defaultPort);
+            var argPort = (args.FirstOrDefault() ?? defaultPort.ToString()).ToIntOrDefault(defaultPort);
+            var port = Environment.GetEnvironmentVariable("PORT").ToIntOrDefault(argPort);
 
             Console.WriteLine($"Starting GETHManager Server on PORT {port}");
 

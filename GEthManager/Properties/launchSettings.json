@@ -10,14 +10,15 @@
   "profiles": {
     "IIS Express": {
       "commandName": "IISExpress",
+      "commandLineArgs": "8002",
       "launchBrowser": true,
-      "launchUrl": "",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
     },
     "GEthManager": {
       "commandName": "Project",
+      "commandLineArgs": "8000",
       "launchBrowser": true,
       "launchUrl": "api/test/ping",
       "environmentVariables": {

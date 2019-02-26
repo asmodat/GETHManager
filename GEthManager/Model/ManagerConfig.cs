@@ -65,15 +65,23 @@ namespace GEthManager.Processing
         /// example: "--syncmode \"fast\" --rpc --rpcapi=\"db,eth,net,web3,personal,txpool\" --cache 2024 --maxpeers 50 --verbosity 3 --rpcport 8545 --rpcaddr \"127.0.0.1\" --rpccorsdomain \"*\" --rpcvhosts \"*\""
         /// </summary>
         public string gethStartArguments { get; set; }
-        public int maxGethOutputLogSize { get; set; } = 5*1024*1024;
-        public int maxGethErrorLogSize { get; set; } = 5 * 1024 * 1024;
-
+        public int maxGethOutputLogSize { get; set; } = 1 * 1024 * 1024;
+        public int maxGethErrorLogSize { get; set; } = 1 * 1024 * 1024;
+        public int maxGethInMemoryOutputLogLength { get; set; } = 1 * 1024 * 1024;
+        public int maxGethInMemoryErrorLogLength { get; set; } = 1 * 1024 * 1024;
 
         public string[] gethStartKillProcesses { get; set; }
         public bool enableGethService { get; set; } = true;
         public bool gethEnableConsole { get; set; } = false;
+        public bool gethEnableLog { get; set; } = true;
         public string gethOutputLog { get; set; }
         public string gethErrorLog { get; set; }
+
+
+        public string restartCommand { get; set; }
+        public string restartArguments { get; set; }
+
+
 
         public void RotateApiKeys()
         {
