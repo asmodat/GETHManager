@@ -90,5 +90,33 @@ namespace GEthManager.Controllers
             else
                 return StatusCode(StatusCodes.Status500InternalServerError, $"Failed to terminate processes with name or id '{id}'.");
         }
+
+        [HttpGet("Restart")]
+        public IActionResult Restart()
+        {
+            var results = _pm.TryRestart();
+
+            if (!results.error.IsNullOrEmpty())
+                return StatusCode(StatusCodes.Status500InternalServerError, results);
+
+            return StatusCode(StatusCodes.Status200OK, results);
+        }
+
+        [HttpGet("CMD")]
+        public IActionResult CMD(string file, string args, bool output = true, bool error = true, int timeout = 4, int wait = 1000)
+        {
+            var results = _pm.TryExecuteCommand(
+                fileName: file,
+                arrguments: args,
+                readOutput: output,
+                readError: error,
+                waitForExit_ms: wait,
+                timeout: timeout);
+
+            if (!results.error.IsNullOrEmpty())
+                return StatusCode(StatusCodes.Status500InternalServerError, results);
+
+            return StatusCode(StatusCodes.Status200OK, results);
+        }
     }
 }

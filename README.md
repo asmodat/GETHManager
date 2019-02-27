@@ -21,8 +21,21 @@ curl -H "Authorization: Basic bG9naW46cGFzc3dvcmQ=" http://localhost:8000/api/Pr
 Geth Proccess Info:
 curl -H "Authorization: Basic bG9naW46cGFzc3dvcmQ=" http://localhost:8000/api/Processes/GETH
 
+ReStart OS:
+curl -H "Authorization: Basic bG9naW46cGFzc3dvcmQ=" http://localhost:8000/api/Processes/Restart
+
+Execute command:
+curl -H "Authorization: Basic bG9naW46cGFzc3dvcmQ=" http://localhost:8000/api/Processes/CMD?file=cmd&timeout=5&args=%2FC+echo+%22Hello+World%22
+
+
 Output Log:
 curl -H "Authorization: Basic bG9naW46cGFzc3dvcmQ=" http://localhost:8000/api/Geth/OutputLog?length=1000
 
 Error Log:
 curl -H "Authorization: Basic bG9naW46cGFzc3dvcmQ=" http://localhost:8000/api/Geth/ErrorLog?length=1000
+
+
+
+
+HealthCheck:
+curl http://localhost:8008/api/HealthCheck/GEth

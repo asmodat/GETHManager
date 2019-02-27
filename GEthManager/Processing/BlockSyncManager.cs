@@ -195,20 +195,23 @@ namespace GEthManager.Processing
         public eth_blockNumber GetPrivateBlockNr() => privateBlockNumber;
 
 
-        public eth_blockNumber[] GetAllBlocksNr() => new eth_blockNumber[] {
+        public eth_blockNumber[] GetAllBlocksNr(bool apiOnly = false) => apiOnly ? new eth_blockNumber[] {
                 infuraBlockNumber,
                 etherscanBlockNumber,
                 publicBlockNumber,
                 privateBlockNumber
+            } : new eth_blockNumber[] {
+                infuraBlockNumber,
+                etherscanBlockNumber,
             };
 
         /// <summary>
         /// Returns Last Detected eth_blockNumber
         /// </summary>
         /// <returns>null or eth_blockNumber object</returns>
-        public eth_blockNumber GetLastBlockNr()
+        public eth_blockNumber GetLastBlockNr(bool apiOnly = false)
         {
-            var blocks = GetAllBlocksNr();
+            var blocks = GetAllBlocksNr(apiOnly: apiOnly);
 
             eth_blockNumber max = null;
             foreach(var block in blocks)

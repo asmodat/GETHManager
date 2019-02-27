@@ -77,10 +77,15 @@ namespace GEthManager.Processing
         public string gethOutputLog { get; set; }
         public string gethErrorLog { get; set; }
 
-
         public string restartCommand { get; set; }
         public string restartArguments { get; set; }
 
+        public int healthCheckBlockDelay { get; set; }
+        public float healthCheckRAM { get; set; }
+        public int healthCheckTimeFrame { get; set; } = 1;
+        public float healthCheckCPU { get; set; } = 100;
+        public float healthCheckDiskSpace { get; set; }
+        public string healthCheckDiskName { get; set; }
 
 
         public void RotateApiKeys()

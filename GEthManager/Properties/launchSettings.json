@@ -18,7 +18,7 @@
     },
     "GEthManager": {
       "commandName": "Project",
-      "commandLineArgs": "8000",
+      "commandLineArgs": "8007",
       "launchBrowser": true,
       "launchUrl": "api/test/ping",
       "environmentVariables": {

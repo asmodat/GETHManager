@@ -27,6 +27,7 @@ namespace GEthManager.Processing
         private List<long> gethReStarts = new List<long>();
 
         private ProcessInfo[] processList;
+        private GEthProcessInfo gethProcessInfo;
 
         private string _errorLog = "";
         private string _outputLog = "";
@@ -66,11 +67,7 @@ namespace GEthManager.Processing
 
         public ProcessInfo[] GetRunningProcessesList() => processList;
 
-        public GEthProcessInfo GetGethProcessInfo() => new GEthProcessInfo(
-            hasExited: this.IsGethExited(),
-            process: geth,
-            gethReStarts: gethReStarts,
-            startTime: gethStart);
+        public GEthProcessInfo GetGethProcessInfo() => gethProcessInfo;
 
         public bool TryUpdateRunningProcessesList()
         {
@@ -83,9 +80,16 @@ namespace GEthManager.Processing
                     return true;
                 }
                 processList = processes.Select(x => x.ToProcessInfo()).ToArray();
+
+                gethProcessInfo = new GEthProcessInfo(
+                        hasExited: this.IsGethExited(),
+                        process: geth,
+                        gethReStarts: gethReStarts,
+                        startTime: gethStart);
+
                 return true;
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 Console.WriteLine($"Failed TryUpdateRunningProcessesList, error: {ex.JsonSerializeAsPrettyException()}");
                 return false;
@@ -238,12 +242,25 @@ namespace GEthManager.Processing
             }
         }
 
+
+        public (string output, string error) TryRestart()
+        {
+            return TryExecuteCommand(
+                fileName: _cfg.restartCommand,
+                arrguments: _cfg.restartArguments,
+                readError: true,
+                readOutput: true,
+                waitForExit_ms: 1000,
+                timeout: 4000);
+        }
+
         public (string output, string error) TryExecuteCommand(
             string fileName, 
             string arrguments,
             bool readOutput,
             bool readError,
-            int waitForExit_ms)
+            int waitForExit_ms,
+            int timeout)
         {
             string output = null;
             string error = null;
@@ -254,15 +271,78 @@ namespace GEthManager.Processing
                 process.StartInfo.Arguments = arrguments;
                 process.StartInfo.CreateNoWindow = true;
                 process.StartInfo.UseShellExecute = false;
-                process.StartInfo.RedirectStandardOutput = false;
-                process.StartInfo.RedirectStandardError = false;
+                process.StartInfo.RedirectStandardOutput = true;
+                process.StartInfo.RedirectStandardError = true;
                 process.Start();
 
-                if(readOutput)
-                    output = process.StandardOutput.ReadToEnd();
+                char[] buffer = new char[256];
+
+                var tStartEnd = DateTime.UtcNow.AddSeconds(timeout);
+
+                if (readOutput)
+                {
+                    Task<int> read = null;
+
+                    while (true)
+                    {
+                        if (read == null)
+                            read = process.StandardOutput.ReadAsync(buffer, 0, buffer.Length);
+
+                        read.Wait(100); // an arbitray timeout
+
+                        if (read.IsCompleted)
+                        {
+                            if (read.Result > 0)
+                            {
+                                output += new string(buffer, 0, read.Result);
+                                read = null; // ok, this task completed so we need to create a new one
+                                continue;
+                            }
+
+                            // got -1, process ended
+                            break;
+                        }
+
+                        if(DateTime.UtcNow > tStartEnd)
+                        {
+                            error += $"TIME OUT ERROR, {timeout}s elsapsed\n\r";
+                            break;
+                        }
+                    }
+                }
 
                 if (readError)
-                    output = process.StandardError.ReadToEnd();
+                {
+                    Task<int> read = null;
+
+                    while (true)
+                    {
+                        if (read == null)
+                            read = process.StandardError.ReadAsync(buffer, 0, buffer.Length);
+
+                        read.Wait(100); // an arbitray timeout
+
+                        if (read.IsCompleted)
+                        {
+                            if (read.Result > 0)
+                            {
+                                error += new string(buffer, 0, read.Result);
+                                read = null; // ok, this task completed so we need to create a new one
+                                continue;
+                            }
+
+                            // got -1, process ended
+                            break;
+                        }
+
+                        if (DateTime.UtcNow > tStartEnd)
+                        {
+                            error += $"TIME OUT ERROR, {timeout}s elsapsed\n\r";
+                            break;
+                        }
+                    }
+
+                }
 
                 process.WaitForExit(waitForExit_ms);
 
