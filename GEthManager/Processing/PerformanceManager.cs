@@ -65,11 +65,10 @@ namespace GEthManager.Processing
             _cfg = cfg.Value;
             _pm = pm;
 
-            if (IsWindows)
-            {
-                //cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-                //ramCounter = new PerformanceCounter("Memory", "Available MBytes");
-            }
+#if WINDOWS
+        cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+        ramCounter = new PerformanceCounter("Memory", "Available MBytes");
+#endif
 
             cpuSamplesPerMinute = Math.Max((int)(60 * ((double)1000 / _cfg.cpuCountIntensity)), 1);
             ramSamplesPerMinute = Math.Max((int)(60 * ((double)1000 / _cfg.ramCountIntensity)), 1);
