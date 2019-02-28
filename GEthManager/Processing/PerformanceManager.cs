@@ -1,16 +1,17 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿#define LINUX
+
 using System;
 using AsmodatStandard.Extensions;
 using AsmodatStandard.Extensions.Collections;
-using System.Threading.Tasks;
 using Microsoft.Extensions.Options;
-using System.Net.Http;
 using GEthManager.Model;
-using System.Text;
 using System.Linq;
-using System.Diagnostics;
+
+#if WINDOWS
+        using System.Diagnostics;
+#endif
+
 using MathNet.Numerics.Statistics;
-using System.Collections.Generic;
 using System.Threading;
 using System.IO;
 using GEthManager.Ententions;
@@ -20,8 +21,11 @@ namespace GEthManager.Processing
     public class PerformanceManager
     {
         private readonly ManagerConfig _cfg;
+
+#if WINDOWS
         private PerformanceCounter cpuCounter;
         private PerformanceCounter ramCounter;
+#endif
 
         private float[] cpuSamples;
         private int cpuSamplePosition = 0;
@@ -63,8 +67,8 @@ namespace GEthManager.Processing
 
             if (IsWindows)
             {
-                cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-                ramCounter = new PerformanceCounter("Memory", "Available MBytes");
+                //cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+                //ramCounter = new PerformanceCounter("Memory", "Available MBytes");
             }
 
             cpuSamplesPerMinute = Math.Max((int)(60 * ((double)1000 / _cfg.cpuCountIntensity)), 1);
@@ -79,20 +83,18 @@ namespace GEthManager.Processing
         {
             try
             {
-                var cpuSample = cpuCounter?.NextValue() ?? 0;
 
-                if (IsWindows)
-                {
-                    while (cpuSample == 0)
-                    {
-                        cpuSample = cpuCounter?.NextValue() ?? 0;
-                        Thread.Sleep(10);
-                    }
-                }
-                else
-                {
-                    cpuSample = _pm.GetGethCpuUsage();
-                }
+#if WINDOWS
+        var cpuSample = cpuCounter?.NextValue() ?? 0;
+
+        while (cpuSample == 0)
+            {
+                cpuSample = cpuCounter?.NextValue() ?? 0;
+                Thread.Sleep(10);
+            }
+#else
+        var cpuSample = _pm.GetGethCpuUsage();
+#endif
 
                 cpuSamplePosition = (cpuSamplePosition + 1) % cpuSamples.Length;
                 cpuSamples[cpuSamplePosition] = cpuSample;
@@ -127,38 +129,36 @@ namespace GEthManager.Processing
         {
             try
             {
-                var ramSample = ramCounter?.NextValue() ?? 0;
+                float ramSample = 0;
+#if WINDOWS
+        ramSample = ramCounter?.NextValue() ?? 0;
 
-                if (IsWindows)
+        while (ramSample == 0)
+        {
+            ramSample = ramCounter?.NextValue() ?? 0;
+            Thread.Sleep(10);
+        }
+#else
+                var ramUsage = _pm.GetProcessesRamUsage();
+                switch (_cfg.healthCheckRAMType?.ToLower().Trim() ?? "max")
                 {
-                    while (ramSample == 0)
-                    {
-                        ramSample = ramCounter?.NextValue() ?? 0;
-                        Thread.Sleep(10);
-                    }
+                    case "min":
+                        ramSample = Math.Max(ramUsage.paged, ramUsage.phisical);
+                        break;
+                    case "paged":
+                        ramSample = ramUsage.paged;
+                        break;
+                    case "phisical":
+                        ramSample = ramUsage.phisical;
+                        break;
+                    case "max":
+                    default:
+                        ramSample = Math.Max(ramUsage.paged, ramUsage.phisical);
+                        break;
                 }
-                else
-                {
-                    var ramUsage = _pm.GetProcessesRamUsage();
-                    switch (_cfg.healthCheckRAMType?.ToLower().Trim() ?? "max")
-                    {
-                        case "min":
-                            ramSample = Math.Max(ramUsage.paged, ramUsage.phisical);
-                            break;
-                        case "paged":
-                            ramSample = ramUsage.paged;
-                            break;
-                        case "phisical":
-                            ramSample = ramUsage.phisical;
-                            break;
-                        case "max":
-                        default:
-                            ramSample = Math.Max(ramUsage.paged, ramUsage.phisical);
-                            break;
-                    }
 
-                    ramSample = _cfg.TotalRamMemory - ramSample;
-                }
+                ramSample = _cfg.TotalRamMemory - ramSample;
+#endif
 
                 ramSamplePosition = (ramSamplePosition + 1) % ramSamples.Length;
                 ramSamples[ramSamplePosition % ramSamples.Length] = ramSample;
