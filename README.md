@@ -38,4 +38,4 @@ curl -H "Authorization: Basic bG9naW46cGFzc3dvcmQ=" http://localhost:8000/api/Ge
 
 
 HealthCheck:
-curl http://localhost:8008/api/HealthCheck/GEth
+curl http://localhost:8000/api/HealthCheck/GEth

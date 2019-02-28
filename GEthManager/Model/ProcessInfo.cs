@@ -1,4 +1,5 @@
-﻿using System.Diagnostics;
+﻿using System;
+using System.Diagnostics;
 
 namespace GEthManager.Model
 {
@@ -8,8 +9,9 @@ namespace GEthManager.Model
         public string processName { get; set; }
         public int sessionId { get; set; }
 
-        public long phisicalMemoryUsageMB { get; set; }
-        public long pagedMemorySizeMB { get; set; }
-        public long virtualMemorySizeMB { get; set; }
+        public float phisicalMemoryUsageMB { get; set; }
+        public float pagedMemorySizeMB { get; set; }
+        public float virtualMemorySizeMB { get; set; }
+        
     }
 }

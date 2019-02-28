@@ -37,6 +37,88 @@ namespace GEthManager.Processing
             _cfg = cfg.Value;
         }
 
+        public float TotalPagedMemoryUsed = 0;
+        public float TotalPhisicalMemoryUsed = 0;
+
+        public (float paged, float phisical) GetProcessesRamUsage() 
+            => (TotalPagedMemoryUsed, TotalPhisicalMemoryUsed);
+
+        private void TryUpdateProcessesRamUsage()
+        {
+            if (processList.IsNullOrEmpty())
+                return;
+
+            try
+            {
+                float pagedMemoryUsed = 0;
+                float phisicalMemoryUsed = 0;
+                for (int i = 0; i < processList.Length; i++)
+                {
+                    var process = processList[i];
+
+                    if (process == null)
+                        continue;
+
+                    pagedMemoryUsed += process.pagedMemorySizeMB;
+                    phisicalMemoryUsed += process.phisicalMemoryUsageMB;
+                }
+
+                TotalPagedMemoryUsed = pagedMemoryUsed;
+                TotalPhisicalMemoryUsed = phisicalMemoryUsed;
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Failed TryUpdateProcessesRamUsage, error: {ex.JsonSerializeAsPrettyException()}");
+            }
+        }
+
+
+        private DateTime gethCurTime;
+        private DateTime gathLastTime;
+        private TimeSpan gethLastTotalProcessorTime;
+        private TimeSpan gethCurTotalProcessorTime;
+
+        public float gathGpuUsage = 0;
+
+        public float GetGethCpuUsage()
+            => gathGpuUsage;
+
+        private void TryUpdateGethCpuUsage()
+        {
+            if (this.IsGethExited())
+                return;
+
+            try
+            {
+                if (gethLastTotalProcessorTime == null || gathLastTime == new DateTime())
+                {
+                    gathLastTime = DateTime.Now;
+                    gethLastTotalProcessorTime = geth.TotalProcessorTime;
+                }
+                else
+                {
+                    gethCurTime = DateTime.Now;
+                    gethCurTotalProcessorTime = geth.TotalProcessorTime;
+
+                    var CPUUsage =
+                        (float)((gethCurTotalProcessorTime.TotalMilliseconds - gethLastTotalProcessorTime.TotalMilliseconds) /
+                            gethCurTime.Subtract(gathLastTime).TotalMilliseconds /
+                            Convert.ToDouble(Environment.ProcessorCount));
+
+                    gathGpuUsage = CPUUsage * 100;
+
+                    gathLastTime = gethCurTime;
+                    gethLastTotalProcessorTime = gethCurTotalProcessorTime;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed TryUpdateGethCpuUsage, error: {ex.JsonSerializeAsPrettyException()}");
+            }
+        }
+
+
         public string GetOutputLog(int n)
         {
             if (n < 0 || n > _cfg.maxGethInMemoryOutputLogLength)
@@ -68,6 +150,8 @@ namespace GEthManager.Processing
         public ProcessInfo[] GetRunningProcessesList() => processList;
 
         public GEthProcessInfo GetGethProcessInfo() => gethProcessInfo;
+        public Process GetGethProcess() => geth;
+
 
         public bool TryUpdateRunningProcessesList()
         {
@@ -93,6 +177,11 @@ namespace GEthManager.Processing
             {
                 Console.WriteLine($"Failed TryUpdateRunningProcessesList, error: {ex.JsonSerializeAsPrettyException()}");
                 return false;
+            }
+            finally
+            {
+                TryUpdateProcessesRamUsage();
+                TryUpdateGethCpuUsage();
             }
         }
 

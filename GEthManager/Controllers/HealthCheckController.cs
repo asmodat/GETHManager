@@ -55,10 +55,10 @@ namespace GEthManager.Controllers
             if (cpuIntensity <= 0)
                 cpuIntensity = _prm.GetMedianCpuResults().FirstOrDefault(x => x > 0);
 
-            var ramUtylization = _prm.GetMedianRamResults()[index];
+            var ramFree = _prm.GetMedianRamResults()[index];
 
-            if (ramUtylization <= 0)
-                ramUtylization = _prm.GetMedianRamResults().FirstOrDefault(x => x > 0);
+            if (ramFree <= 0)
+                ramFree = _prm.GetMedianRamResults().FirstOrDefault(x => x > 0);
 
             var driveInfo = _prm.GetDriveInfo()?.FirstOrDefault(x => x.name == _cfg.healthCheckDiskName);
             var diskSpace = (100 - (driveInfo?.availableFreeSpace ?? 0));
@@ -75,6 +75,9 @@ namespace GEthManager.Controllers
             if (diskSpace > _cfg.healthCheckDiskSpace)
                 isHealthy = false;
 
+            if (ramFree < _cfg.healthCheckRAM)
+                isHealthy = false;
+
             var hc = new HealthCheck()
             {
                 isHealthy = isHealthy,
@@ -82,7 +85,7 @@ namespace GEthManager.Controllers
                 ourBlock = ourBlock,
                 cpuUsed = cpuIntensity,
                 cpuMax = _cfg.healthCheckCPU,
-                ramFree = ramUtylization,
+                ramFree = ramFree,
                 ramMin = _cfg.healthCheckRAM,
                 diskUsed = diskSpace,
                 diskMax = _cfg.healthCheckDiskSpace

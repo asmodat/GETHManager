@@ -50,12 +50,23 @@ namespace GEthManager.Processing
 
         private DiskInfo[] driveInfo;
 
+        private readonly ProcessManager _pm;
 
-        public PerformanceManager(IOptions<ManagerConfig> cfg)
+        private bool IsWindows = false;// RuntimeEx.IsWindows();
+
+        public PerformanceManager(
+            IOptions<ManagerConfig> cfg,
+            ProcessManager pm)
         {
             _cfg = cfg.Value;
-            cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
-            ramCounter = new PerformanceCounter("Memory", "Available MBytes");
+            _pm = pm;
+
+            if (IsWindows)
+            {
+                cpuCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total");
+                ramCounter = new PerformanceCounter("Memory", "Available MBytes");
+            }
+
             cpuSamplesPerMinute = Math.Max((int)(60 * ((double)1000 / _cfg.cpuCountIntensity)), 1);
             ramSamplesPerMinute = Math.Max((int)(60 * ((double)1000 / _cfg.ramCountIntensity)), 1);
             cpuSamples = new float[60 * cpuSamplesPerMinute];
@@ -68,12 +79,19 @@ namespace GEthManager.Processing
         {
             try
             {
-                var cpuSample = cpuCounter.NextValue();
+                var cpuSample = cpuCounter?.NextValue() ?? 0;
 
-                while (cpuSample == 0)
+                if (IsWindows)
                 {
-                    cpuSample = cpuCounter.NextValue();
-                    Thread.Sleep(10);
+                    while (cpuSample == 0)
+                    {
+                        cpuSample = cpuCounter?.NextValue() ?? 0;
+                        Thread.Sleep(10);
+                    }
+                }
+                else
+                {
+                    cpuSample = _pm.GetGethCpuUsage();
                 }
 
                 cpuSamplePosition = (cpuSamplePosition + 1) % cpuSamples.Length;
@@ -109,12 +127,37 @@ namespace GEthManager.Processing
         {
             try
             {
-                var ramSample = ramCounter.NextValue();
+                var ramSample = ramCounter?.NextValue() ?? 0;
 
-                while (ramSample == 0)
+                if (IsWindows)
                 {
-                    ramSample = cpuCounter.NextValue();
-                    Thread.Sleep(10);
+                    while (ramSample == 0)
+                    {
+                        ramSample = ramCounter?.NextValue() ?? 0;
+                        Thread.Sleep(10);
+                    }
+                }
+                else
+                {
+                    var ramUsage = _pm.GetProcessesRamUsage();
+                    switch (_cfg.healthCheckRAMType?.ToLower().Trim() ?? "max")
+                    {
+                        case "min":
+                            ramSample = Math.Max(ramUsage.paged, ramUsage.phisical);
+                            break;
+                        case "paged":
+                            ramSample = ramUsage.paged;
+                            break;
+                        case "phisical":
+                            ramSample = ramUsage.phisical;
+                            break;
+                        case "max":
+                        default:
+                            ramSample = Math.Max(ramUsage.paged, ramUsage.phisical);
+                            break;
+                    }
+
+                    ramSample = _cfg.TotalRamMemory - ramSample;
                 }
 
                 ramSamplePosition = (ramSamplePosition + 1) % ramSamples.Length;

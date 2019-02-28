@@ -9,6 +9,7 @@ using AsmodatStandard.Extensions;
 using GEthManager.Services;
 using Microsoft.AspNetCore.Authentication;
 using GEthManager.Handlers;
+using System;
 
 namespace GEthManager
 {
@@ -18,16 +19,21 @@ namespace GEthManager
 
         public Startup(IConfiguration configuration)
         {
+            var cmd = Environment.GetCommandLineArgs();
 
-            var configurationFilePath1 = @"D:\GLOBAL\GEthManagerConfig.json";
+            if(cmd.Length < 3)
+                throw new Exception("Missing Port or Configuartaion File Name!");
+
+            var configurationFilePath = cmd[2];
             string configJson = null;
 
-            if(File.Exists(configurationFilePath1))
-            {
-                configJson = configurationFilePath1;
-            }
+            if(File.Exists(configurationFilePath))
+                configJson = configurationFilePath;
+            else
+                throw new Exception($"Configuration file does NOT exist: '{configurationFilePath}'");
 
-            if(configJson.IsNullOrEmpty())
+
+            if (configJson.IsNullOrEmpty())
             {
                 Configuration = configuration;
                 return;

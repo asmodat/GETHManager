@@ -12,15 +12,15 @@ namespace GEthManager.Extentions
 
             try
             {
+                
                 return new ProcessInfo()
                 {
                     id = p.Id,
                     processName = p.ProcessName,
                     sessionId = p.SessionId,
-
-                    phisicalMemoryUsageMB = p.WorkingSet64 / (1024 * 1024),
-                    pagedMemorySizeMB = p.PagedMemorySize64 / (1024 * 1024),
-                    virtualMemorySizeMB = p.VirtualMemorySize64 / (1024 * 1024),
+                    phisicalMemoryUsageMB = (float)p.WorkingSet64 / (1024 * 1024),
+                    pagedMemorySizeMB = (float)p.PagedMemorySize64 / (1024 * 1024),
+                    virtualMemorySizeMB = (float)p.VirtualMemorySize64 / (1024 * 1024),
                 };
             }
             catch

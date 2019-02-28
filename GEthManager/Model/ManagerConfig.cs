@@ -87,6 +87,16 @@ namespace GEthManager.Processing
         public float healthCheckDiskSpace { get; set; }
         public string healthCheckDiskName { get; set; }
 
+        /// <summary>
+        /// paged, phisical, max, min
+        /// </summary>
+        public string healthCheckRAMType { get; set; } = "max";
+
+        /// <summary>
+        /// Used wen run on linux, this value must be set to total available RAM
+        /// </summary>
+        public float TotalRamMemory { get; set; } = 1024;
+
 
         public void RotateApiKeys()
         {
