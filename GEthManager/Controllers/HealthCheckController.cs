@@ -44,6 +44,12 @@ namespace GEthManager.Controllers
         {
             var lastBlock = _bs.GetLastBlockNr(apiOnly: true)?.blockNumber ?? -1;
             var ourBlock = _bs.GetPrivateBlockNr()?.blockNumber ?? -1;
+            var blockTime = (float)_bs.GetAverageBlockTime() / 1000;
+            float syncState = 0;
+
+            if(lastBlock > 0 && ourBlock > 0)
+                syncState = 100 - (((float)(lastBlock - ourBlock) / lastBlock) * 100);
+
             var isHealthy = true;
 
             var index = _prm.TimeFrameIndexes().FindIndex(x => x == _cfg.healthCheckTimeFrame);
@@ -88,7 +94,9 @@ namespace GEthManager.Controllers
                 ramFree = ramFree,
                 ramMin = _cfg.healthCheckRAM,
                 diskUsed = diskSpace,
-                diskMax = _cfg.healthCheckDiskSpace
+                diskMax = _cfg.healthCheckDiskSpace,
+                blockTime = blockTime,
+                syncState = syncState,
             };
 
             if (!isHealthy)

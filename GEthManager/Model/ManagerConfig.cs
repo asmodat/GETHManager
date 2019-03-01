@@ -87,6 +87,8 @@ namespace GEthManager.Processing
         public float healthCheckDiskSpace { get; set; }
         public string healthCheckDiskName { get; set; }
 
+        public int bockTimesAverageCount { get; set; } = 10;
+
         /// <summary>
         /// paged, phisical, max, min
         /// </summary>

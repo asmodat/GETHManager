@@ -7,6 +7,7 @@ using System.Net.Http;
 using GEthManager.Model;
 using System.Text;
 using System.Linq;
+using System.Collections.Generic;
 
 namespace GEthManager.Processing
 {
@@ -18,10 +19,15 @@ namespace GEthManager.Processing
         private eth_blockNumber publicBlockNumber;
         private eth_blockNumber privateBlockNumber;
 
+        private eth_blockNumber lastBlockTimesBlock;
+        private List<int> blockTimes;
+        private int averageBlockTime = -1;
+
 
         public BlockSyncManager(IOptions<ManagerConfig> cfg)
         {
             _cfg = cfg.Value;
+            blockTimes = new List<int>();
         }
 
         /// <summary>
@@ -183,16 +189,50 @@ namespace GEthManager.Processing
             {
                 response.name = "private";
                 privateBlockNumber = response;
+                TryUpdateBlockTimes(response);
                 return true;
             }
 
             return false;
         }
 
+        private void TryUpdateBlockTimes(eth_blockNumber currentBlock)
+        {
+            if (lastBlockTimesBlock?.TryGetBlockNumber() == currentBlock?.TryGetBlockNumber())
+                return;
+
+            if (currentBlock == null)
+                return;
+
+            var lastBlock = this.GetLastBlockNr();
+
+            if (lastBlock == null)
+                return;
+
+
+            var lastNr = lastBlock?.TryGetBlockNumber();
+            var currentNr = currentBlock?.TryGetBlockNumber();
+
+            if (lastNr <= 0 || currentNr <= 0)
+                return;
+
+            if (lastNr + 1 == currentNr)
+            {
+                blockTimes.Add((currentBlock.TimeStamp - lastBlock.TimeStamp).Milliseconds);
+                averageBlockTime = (int)blockTimes.Average();
+                lastBlockTimesBlock = currentBlock;
+            }
+
+            if (blockTimes.Count > _cfg.bockTimesAverageCount)
+                blockTimes.RemoveAt(0);
+        }
+
         public eth_blockNumber GetInfuraBlockNr() => infuraBlockNumber;
         public eth_blockNumber GetEtherScanBlockNr() => etherscanBlockNumber;
         public eth_blockNumber GetPublicBlockNr() => publicBlockNumber;
         public eth_blockNumber GetPrivateBlockNr() => privateBlockNumber;
+
+        public int GetAverageBlockTime() => averageBlockTime;
 
 
         public eth_blockNumber[] GetAllBlocksNr(bool apiOnly = false) => apiOnly ? new eth_blockNumber[] {

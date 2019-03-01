@@ -89,10 +89,16 @@ namespace GEthManager.Processing
         while (cpuSample == 0)
             {
                 cpuSample = cpuCounter?.NextValue() ?? 0;
-                Thread.Sleep(10);
+                Thread.Sleep(100);
             }
 #else
         var cpuSample = _pm.GetGethCpuUsage();
+
+        while (cpuSample == 0)
+        {
+            cpuSample = _pm.GetGethCpuUsage();
+            Thread.Sleep(100);
+        }
 #endif
 
                 cpuSamplePosition = (cpuSamplePosition + 1) % cpuSamples.Length;
