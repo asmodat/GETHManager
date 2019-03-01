@@ -95,7 +95,7 @@ namespace GEthManager.Controllers
                 ramMin = _cfg.healthCheckRAM,
                 diskUsed = diskSpace,
                 diskMax = _cfg.healthCheckDiskSpace,
-                blockTime = blockTime,
+                blockTimeAvg = blockTime,
                 syncState = syncState,
             };
 

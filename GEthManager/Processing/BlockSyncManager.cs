@@ -8,6 +8,7 @@ using GEthManager.Model;
 using System.Text;
 using System.Linq;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace GEthManager.Processing
 {
@@ -19,15 +20,18 @@ namespace GEthManager.Processing
         private eth_blockNumber publicBlockNumber;
         private eth_blockNumber privateBlockNumber;
 
-        private eth_blockNumber lastBlockTimesBlock;
-        private List<int> blockTimes;
-        private int averageBlockTime = -1;
+        
+        private List<long> blockTimes;
+        private long lastBlockTimesBlockNr;
+        private Stopwatch blockTimesStopWatch = new Stopwatch();
+        private long averageBlockTime = -1;
 
 
         public BlockSyncManager(IOptions<ManagerConfig> cfg)
         {
             _cfg = cfg.Value;
-            blockTimes = new List<int>();
+            blockTimes = new List<long>();
+            blockTimesStopWatch.Start();
         }
 
         /// <summary>
@@ -111,6 +115,7 @@ namespace GEthManager.Processing
             {
                 response.name = "infura";
                 infuraBlockNumber = response;
+                TryUpdateBlockTimes(response);
                 return true;
             }
 
@@ -137,6 +142,7 @@ namespace GEthManager.Processing
             {
                 response.name = "etherscan";
                 etherscanBlockNumber = response;
+                TryUpdateBlockTimes(response);
                 return true;
             }
 
@@ -163,6 +169,7 @@ namespace GEthManager.Processing
             {
                 response.name = "public";
                 publicBlockNumber = response;
+                TryUpdateBlockTimes(response);
                 return true;
             }
 
@@ -198,33 +205,29 @@ namespace GEthManager.Processing
 
         private void TryUpdateBlockTimes(eth_blockNumber currentBlock)
         {
-            if (lastBlockTimesBlock?.TryGetBlockNumber() == currentBlock?.TryGetBlockNumber())
+            var currentBlockNr = currentBlock?.TryGetBlockNumber() ?? -1;
+
+            if (lastBlockTimesBlockNr == currentBlockNr || 
+                currentBlockNr <= 0)
                 return;
 
-            if (currentBlock == null)
-                return;
-
-            var lastBlock = this.GetLastBlockNr();
-
-            if (lastBlock == null)
-                return;
-
-
-            var lastNr = lastBlock?.TryGetBlockNumber();
-            var currentNr = currentBlock?.TryGetBlockNumber();
-
-            if (lastNr <= 0 || currentNr <= 0)
-                return;
-
-            if (lastNr + 1 == currentNr)
+            if(lastBlockTimesBlockNr <= 0 ||
+               currentBlockNr > lastBlockTimesBlockNr + 1)
             {
-                blockTimes.Add((currentBlock.TimeStamp - lastBlock.TimeStamp).Milliseconds);
-                averageBlockTime = (int)blockTimes.Average();
-                lastBlockTimesBlock = currentBlock;
+                lastBlockTimesBlockNr = currentBlockNr;
+                
+                blockTimesStopWatch.Restart();
+                return;
             }
+
+            blockTimes.Add(blockTimesStopWatch.ElapsedMilliseconds);
 
             if (blockTimes.Count > _cfg.bockTimesAverageCount)
                 blockTimes.RemoveAt(0);
+
+            averageBlockTime = (long)blockTimes.Average();
+            lastBlockTimesBlockNr = currentBlockNr;
+            blockTimesStopWatch.Restart();
         }
 
         public eth_blockNumber GetInfuraBlockNr() => infuraBlockNumber;
@@ -232,7 +235,7 @@ namespace GEthManager.Processing
         public eth_blockNumber GetPublicBlockNr() => publicBlockNumber;
         public eth_blockNumber GetPrivateBlockNr() => privateBlockNumber;
 
-        public int GetAverageBlockTime() => averageBlockTime;
+        public long GetAverageBlockTime() => averageBlockTime;
 
 
         public eth_blockNumber[] GetAllBlocksNr(bool apiOnly = false) => apiOnly ? new eth_blockNumber[] {
@@ -274,7 +277,7 @@ namespace GEthManager.Processing
                 //The most early detected block timestamp is used to keep consistent results of the API
                 if (max.blockNumber == block.blockNumber)
                 {
-                    if (max.TimeStamp > block.TimeStamp)
+                    if (max.TimeStamp < block.TimeStamp)
                         max = block;
                 }
             }

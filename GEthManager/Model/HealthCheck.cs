@@ -19,7 +19,7 @@ namespace GEthManager.Model
         public float diskUsed;
         public float diskMax;
 
-        public float blockTime;
+        public float blockTimeAvg;
         public float syncState;
     }
 }
