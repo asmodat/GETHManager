@@ -32,6 +32,8 @@ namespace GEthManager.Processing
         private string _errorLog = "";
         private string _outputLog = "";
 
+        private static readonly object _locker = new object();
+
         public ProcessManager(IOptions<ManagerConfig> cfg)
         {
             _cfg = cfg.Value;
@@ -314,20 +316,23 @@ namespace GEthManager.Processing
 
         private void TryUpdateOutputLog(string file, string data, int maxLength)
         {
-            if (!_cfg.gethEnableLog || data.IsNullOrEmpty())
-                return;
-
-            try
+            lock (_locker)
             {
-                var fi = new FileInfo(file);
-                fi.AppendAllText(data);
+                if (!_cfg.gethEnableLog || data.IsNullOrEmpty())
+                    return;
 
-                if (fi.Length > maxLength)
-                    fi.TrimEnd((long)(maxLength * 0.1));
-            }
-            catch(Exception ex)
-            {
-                Console.WriteLine($"Failed to save log data to '{file}', error: {ex.Message ?? "undefined"}");
+                try
+                {
+                    var fi = new FileInfo(file);
+                    fi.AppendAllText(data);
+
+                    if (fi.Length > maxLength)
+                        fi.TrimEnd((long)(maxLength * 0.1));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Failed to save log data to '{file}', error: {ex.Message ?? "undefined"}");
+                }
             }
         }
 

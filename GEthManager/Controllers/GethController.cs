@@ -1,15 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using System;
-using AsmodatStandard.Extensions;
-using System.Threading.Tasks;
 using GEthManager.Processing;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Options;
-using GEthManager.Model;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GEthManager.Controllers
 {
+    [Authorize]
     [Route("api/Geth")]
     public class GethController : Controller
     {

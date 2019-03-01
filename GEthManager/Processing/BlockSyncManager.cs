@@ -19,12 +19,20 @@ namespace GEthManager.Processing
         private eth_blockNumber infuraBlockNumber;
         private eth_blockNumber publicBlockNumber;
         private eth_blockNumber privateBlockNumber;
+        private eth_syncing privateSyncing;
 
-        
+
         private List<long> blockTimes;
         private long lastBlockTimesBlockNr;
         private Stopwatch blockTimesStopWatch = new Stopwatch();
         private long averageBlockTime = -1;
+
+        private List<float> syncTimes;
+        private Stopwatch syncTimesStopWatch = new Stopwatch();
+        private long lastSyncBlock = -1;
+        private float averageSyncSpeed = -1;
+
+        private static readonly object _locker = new object();
 
 
         public BlockSyncManager(IOptions<ManagerConfig> cfg)
@@ -32,6 +40,9 @@ namespace GEthManager.Processing
             _cfg = cfg.Value;
             blockTimes = new List<long>();
             blockTimesStopWatch.Start();
+
+            syncTimes = new List<float>();
+            syncTimesStopWatch.Start();
         }
 
         /// <summary>
@@ -86,6 +97,24 @@ namespace GEthManager.Processing
                     mediaType: "application/json");
 
                 var response = await client.POST<eth_blockNumber>(
+                    requestUri: gethConnectionString, content: content,
+                    ensureStatusCode: System.Net.HttpStatusCode.OK);
+
+                response.TimeStamp = DateTime.UtcNow;
+                return response;
+            }
+        }
+
+        public async Task<eth_syncing> FetchGethSyncResponse(string gethConnectionString)
+        {
+            using (var client = new HttpClient() { Timeout = TimeSpan.FromSeconds(_cfg.defaultHttpClientTimeout) })
+            {
+                var content = new StringContent(
+                    _cfg.gethBlockSyncFetchContent,
+                    encoding: Encoding.UTF8,
+                    mediaType: "application/json");
+
+                var response = await client.POST<eth_syncing>(
                     requestUri: gethConnectionString, content: content,
                     ensureStatusCode: System.Net.HttpStatusCode.OK);
 
@@ -203,39 +232,114 @@ namespace GEthManager.Processing
             return false;
         }
 
-        private void TryUpdateBlockTimes(eth_blockNumber currentBlock)
+
+        public async Task<bool> TryUpdatePrivateSyncing()
         {
-            var currentBlockNr = currentBlock?.TryGetBlockNumber() ?? -1;
-
-            if (lastBlockTimesBlockNr == currentBlockNr || 
-                currentBlockNr <= 0)
-                return;
-
-            if(lastBlockTimesBlockNr <= 0 ||
-               currentBlockNr > lastBlockTimesBlockNr + 1)
+            eth_syncing response;
+            try
             {
-                lastBlockTimesBlockNr = currentBlockNr;
-                
-                blockTimesStopWatch.Restart();
-                return;
+                var connectionString = _cfg.GetPrivateGethConnectionString();
+                response = await FetchGethSyncResponse(connectionString);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("Failed to fetch private geth block height.");
+                Console.WriteLine(ex.JsonSerializeAsPrettyException());
+                return false;
             }
 
-            blockTimes.Add(blockTimesStopWatch.ElapsedMilliseconds);
+            if (response == null || response.result is bool)
+                return false;
 
-            if (blockTimes.Count > _cfg.bockTimesAverageCount)
-                blockTimes.RemoveAt(0);
+            var nr = response.TryGetCurrentBlock();
 
-            averageBlockTime = (long)blockTimes.Average();
-            lastBlockTimesBlockNr = currentBlockNr;
-            blockTimesStopWatch.Restart();
+            if (nr > (privateSyncing?.TryGetCurrentBlock() ?? 0))
+            {
+                response.name = "private";
+                privateSyncing = response;
+                TryUpdateBlockTimes(
+                    currentBlock: null, 
+                    currentBlockOverride: response.TryGetHighestBlock());
+                TryUpdateSyncTimes(response);
+                return true;
+            }
+
+            return false;
+        }
+
+        private void TryUpdateSyncTimes(eth_syncing syncing)
+        {
+            lock (_locker)
+            {
+                var currentSyncBlockNr = syncing.TryGetCurrentBlock();
+
+                if (lastSyncBlock >= currentSyncBlockNr ||
+                    currentSyncBlockNr <= 0)
+                    return;
+
+                if(syncTimes.Count == 0 && lastSyncBlock <= 0)
+                {
+                    syncTimesStopWatch.Restart();
+                    lastSyncBlock = currentSyncBlockNr;
+                    return;
+                }
+
+                syncTimes.Add(((float)(currentSyncBlockNr - lastSyncBlock) / syncTimesStopWatch.ElapsedMilliseconds) * 1000);
+                syncTimesStopWatch.Restart();
+
+                if (syncTimes.Count > _cfg.syncTimesAverageCount)
+                    syncTimes.RemoveAt(0);
+
+                averageSyncSpeed = (long)syncTimes.Average();
+                lastSyncBlock = currentSyncBlockNr;
+            }
+        }
+
+        private void TryUpdateBlockTimes(eth_blockNumber currentBlock, long? currentBlockOverride = null)
+        {
+            lock (_locker)
+            {
+                var currentBlockNr = currentBlockOverride ?? currentBlock.TryGetBlockNumber();
+
+                if (lastBlockTimesBlockNr == currentBlockNr ||
+                    currentBlockNr <= 0 ||
+                    this.GetLastBlockNr().TryGetBlockNumber() > currentBlockNr)
+                    return;
+
+                if (lastBlockTimesBlockNr <= 0 ||
+                   currentBlockNr > lastBlockTimesBlockNr + 1)
+                {
+                    lastBlockTimesBlockNr = currentBlockNr;
+
+                    blockTimesStopWatch.Restart();
+                    return;
+                }
+
+                blockTimes.Add(blockTimesStopWatch.ElapsedMilliseconds);
+
+                if (blockTimes.Count > _cfg.bockTimesAverageCount)
+                    blockTimes.RemoveAt(0);
+
+                averageBlockTime = (long)blockTimes.Average();
+                lastBlockTimesBlockNr = currentBlockNr;
+                blockTimesStopWatch.Restart();
+            }
         }
 
         public eth_blockNumber GetInfuraBlockNr() => infuraBlockNumber;
         public eth_blockNumber GetEtherScanBlockNr() => etherscanBlockNumber;
         public eth_blockNumber GetPublicBlockNr() => publicBlockNumber;
         public eth_blockNumber GetPrivateBlockNr() => privateBlockNumber;
+        public eth_syncing GetPrivateSyncing() => privateSyncing;
 
-        public long GetAverageBlockTime() => averageBlockTime;
+        public float GetAverageBlockTime()
+        {
+            if (averageBlockTime < 0)
+                return -1;
+
+            return (float)averageBlockTime / 1000;
+        }
+        public float GetAverageSyncSpeed() => averageSyncSpeed;
 
 
         public eth_blockNumber[] GetAllBlocksNr(bool apiOnly = false) => apiOnly ? new eth_blockNumber[] {
@@ -277,7 +381,7 @@ namespace GEthManager.Processing
                 //The most early detected block timestamp is used to keep consistent results of the API
                 if (max.blockNumber == block.blockNumber)
                 {
-                    if (max.TimeStamp < block.TimeStamp)
+                    if (max.TimeStamp > block.TimeStamp)
                         max = block;
                 }
             }

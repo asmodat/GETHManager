@@ -42,9 +42,19 @@ namespace GEthManager.Controllers
         [HttpGet("GEth")]
         public IActionResult GEth()
         {
+            var lastSync = _bs.GetPrivateSyncing()?.TryGetHighestBlock() ?? -1;
             var lastBlock = _bs.GetLastBlockNr(apiOnly: true)?.blockNumber ?? -1;
+
+            lastBlock = Math.Max(lastBlock, lastSync);
+
+            var ourSync = _bs.GetPrivateSyncing()?.TryGetCurrentBlock() ?? -1;
             var ourBlock = _bs.GetPrivateBlockNr()?.blockNumber ?? -1;
-            var blockTime = (float)_bs.GetAverageBlockTime() / 1000;
+
+            ourBlock = Math.Max(ourBlock, ourSync);
+
+            var blockTime = _bs.GetAverageBlockTime();
+            var syncSpeed = _bs.GetAverageSyncSpeed();
+
             float syncState = 0;
 
             if(lastBlock > 0 && ourBlock > 0)
@@ -97,6 +107,7 @@ namespace GEthManager.Controllers
                 diskMax = _cfg.healthCheckDiskSpace,
                 blockTimeAvg = blockTime,
                 syncState = syncState,
+                syncSpeedAvg = syncSpeed
             };
 
             if (!isHealthy)

@@ -10,9 +10,11 @@ using Microsoft.Extensions.Options;
 using GEthManager.Model;
 using System.Diagnostics;
 using System.Linq;
+using Microsoft.AspNetCore.Authorization;
 
 namespace GEthManager.Controllers
 {
+    [Authorize]
     [Route("api/Resources")]
     public class ResourcesController : Controller
     {

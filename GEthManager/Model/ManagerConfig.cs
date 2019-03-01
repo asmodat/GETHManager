@@ -29,6 +29,7 @@ namespace GEthManager.Processing
         public string infuraBlockHeightFetchContent { get; set; } = "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"eth_blockNumber\", \"params\": []}";
 
         public string gethBlockHeightFetchContent { get; set; } = "{\"jsonrpc\": \"2.0\", \"id\": 1, \"method\": \"eth_blockNumber\", \"params\": []}";
+        public string gethBlockSyncFetchContent { get; set; } = "{\"jsonrpc\":\"2.0\",\"method\":\"eth_syncing\",\"params\":[],\"id\":1}";
 
         public string welocomeMessage { get; set; } = "Welcome To Geth Manager";
 
@@ -87,7 +88,8 @@ namespace GEthManager.Processing
         public float healthCheckDiskSpace { get; set; }
         public string healthCheckDiskName { get; set; }
 
-        public int bockTimesAverageCount { get; set; } = 10;
+        public int bockTimesAverageCount { get; set; } = 7;
+        public int syncTimesAverageCount { get; set; } = 7;
 
         /// <summary>
         /// paged, phisical, max, min
