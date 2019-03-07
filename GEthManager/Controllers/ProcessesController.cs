@@ -94,7 +94,22 @@ namespace GEthManager.Controllers
         [HttpGet("Restart")]
         public IActionResult Restart()
         {
+            var gracefullHalt = _pm.TryCloseGeth(force: false, permanent: true);
+
             var results = _pm.TryRestart();
+
+            if (!results.error.IsNullOrEmpty())
+                return StatusCode(StatusCodes.Status500InternalServerError, results);
+
+            return StatusCode(StatusCodes.Status200OK, results);
+        }
+
+        [HttpGet("Shutdown")]
+        public IActionResult Shutdown(int? haltTimeout = null, int timeout = 5000, int waitForExit_ms = 5000)
+        {
+            var gracefullHalt = _pm.TryCloseGeth(force: false, permanent: true, waitTimeout: haltTimeout);
+
+            var results = _pm.TryShutdown(timeout: timeout, waitForExit_ms: waitForExit_ms);
 
             if (!results.error.IsNullOrEmpty())
                 return StatusCode(StatusCodes.Status500InternalServerError, results);

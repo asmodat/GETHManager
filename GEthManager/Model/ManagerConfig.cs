@@ -9,7 +9,7 @@ namespace GEthManager.Processing
 {
     public class ManagerConfig
     {
-        public string version { get; set; }
+        public string version { get; set; } = "0.1.1";
         public string login { get; set; }
         public string password { get; set; }
 
@@ -71,6 +71,11 @@ namespace GEthManager.Processing
         public int maxGethInMemoryOutputLogLength { get; set; } = 1 * 1024 * 1024;
         public int maxGethInMemoryErrorLogLength { get; set; } = 1 * 1024 * 1024;
 
+        /// <summary>
+        /// miliseconts wit for geth to close
+        /// </summary>
+        public int gethCloseWait { get; set; } = 60 * 1024;
+
         public string[] gethStartKillProcesses { get; set; }
         public bool enableGethService { get; set; } = true;
         public bool gethEnableConsole { get; set; } = false;
@@ -80,6 +85,9 @@ namespace GEthManager.Processing
 
         public string restartCommand { get; set; }
         public string restartArguments { get; set; }
+
+        public string shutdownCommand { get; set; }
+        public string shutdownArguments { get; set; }
 
         public int healthCheckBlockDelay { get; set; }
         public float healthCheckRAM { get; set; }

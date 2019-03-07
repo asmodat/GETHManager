@@ -6,6 +6,7 @@ using System.Net;
 using AsmodatStandard.Extensions;
 using AsmodatStandard.Extensions.Collections;
 using System.Linq;
+using System.Runtime.Loader;
 
 namespace GEthManager
 {
@@ -13,7 +14,13 @@ namespace GEthManager
     {
         public static void Main(string[] args)
         {
+            AssemblyLoadContext.Default.Unloading += Default_Unloading;
             BuildWebHost(args).Run();
+        }
+
+        private static void Default_Unloading(AssemblyLoadContext obj)
+        {
+            Console.WriteLine("GETHManager was Stopped.");
         }
 
         private const int defaultPort = 8000;

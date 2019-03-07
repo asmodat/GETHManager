@@ -74,10 +74,9 @@ namespace GEthManager.Controllers
             if (results == null)
                 return StatusCode(StatusCodes.Status500InternalServerError, "No Drive Info");
 
-
             name = name?.ToLower().ReplaceMany((" ", ""), (":", ""), ("/", ""), ("\\", ""));
 
-            if (name.IsNullOrEmpty())
+            if (name == null)
                 return StatusCode(StatusCodes.Status200OK, results);
 
             var drive = results.FirstOrDefault(x => x.name == name);

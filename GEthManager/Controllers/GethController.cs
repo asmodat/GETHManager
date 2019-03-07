@@ -48,5 +48,19 @@ namespace GEthManager.Controllers
 
             return StatusCode(StatusCodes.Status200OK, _pm.GetErrorLog(length.Value));
         }
+
+        [HttpGet("TryClose")]
+        public IActionResult TryClose(bool permanent = false, bool force = false, int? waitTimeout = null)
+        {
+            var result = _pm.TryCloseGeth(force: force, permanent: permanent, waitTimeout: waitTimeout);
+            return StatusCode(StatusCodes.Status200OK, result);
+        }
+
+        [HttpGet("Close")]
+        public IActionResult Close(bool permanent = false, int? waitTimeout = null)
+        {
+            var result = _pm.TryCloseGeth(force: true, permanent: permanent, waitTimeout: waitTimeout);
+            return StatusCode(result ? StatusCodes.Status200OK : StatusCodes.Status500InternalServerError, result);
+        }
     }
 }

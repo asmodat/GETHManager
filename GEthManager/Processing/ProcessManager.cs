@@ -18,7 +18,7 @@ using GEthManager.Extentions;
 
 namespace GEthManager.Processing
 {
-    public class ProcessManager
+    public class ProcessManager :IDisposable
     {
         private readonly ManagerConfig _cfg;
 
@@ -233,10 +233,50 @@ namespace GEthManager.Processing
             }
         }
 
+        private bool gethPermanentHalt = false;
+
+        public bool TryCloseGeth(bool force = false, bool permanent = false, int? waitTimeout = null)
+        {
+            if (permanent)
+                gethPermanentHalt = true;
+
+            if (IsGethExited())
+                return false;
+
+            try
+            {
+                geth.Close();
+                var waitForExit = geth.WaitForExit(waitTimeout ?? _cfg.gethCloseWait);
+
+                if(!IsGethExited() && force)
+                    geth.Kill();
+
+                geth.Dispose();
+
+                if (!IsGethExited())
+                    throw new Exception($"Failed to Close GETH process, (WaitForExit:{waitForExit.ToString()}/{_cfg.gethCloseWait})");
+                else
+                    return true;
+            }
+            catch(Exception ex)
+            {
+                Console.WriteLine($"Failed to Close GETH process gracefully, excepton: {ex.JsonSerializeAsPrettyException()}");
+                return false;
+            }
+        }
+
         public void ReStartGETH()
         {
+            this.TryCloseGeth(force: false);
+
             if (!_cfg.gethStartKillProcesses.IsNullOrEmpty())
                 TryTerminateProcesses(_cfg.gethStartKillProcesses);
+
+            if (gethPermanentHalt)
+            {
+                Console.WriteLine("Geth process is permanently stopped, restart will not be attempted.");
+                return;
+            }
 
             try
             {
@@ -247,6 +287,7 @@ namespace GEthManager.Processing
                 geth.StartInfo.UseShellExecute = false;
                 geth.StartInfo.RedirectStandardOutput = true;
                 geth.StartInfo.RedirectStandardError = true;
+                geth.StartInfo.RedirectStandardInput = true;
 
                 geth.OutputDataReceived += Geth_OutputDataReceived;
                 geth.ErrorDataReceived += Geth_ErrorDataReceived;
@@ -337,15 +378,26 @@ namespace GEthManager.Processing
         }
 
 
-        public (string output, string error) TryRestart()
+        public (string output, string error) TryRestart(int timeout = 5000, int waitForExit_ms = 5000)
         {
             return TryExecuteCommand(
                 fileName: _cfg.restartCommand,
                 arrguments: _cfg.restartArguments,
                 readError: true,
                 readOutput: true,
-                waitForExit_ms: 1000,
-                timeout: 4000);
+                waitForExit_ms: waitForExit_ms,
+                timeout: timeout);
+        }
+
+        public (string output, string error) TryShutdown(int timeout = 5000, int waitForExit_ms = 5000)
+        {
+            return TryExecuteCommand(
+                fileName: _cfg.shutdownCommand,
+                arrguments: _cfg.shutdownArguments,
+                readError: true,
+                readOutput: true,
+                waitForExit_ms: waitForExit_ms,
+                timeout: timeout);
         }
 
         public (string output, string error) TryExecuteCommand(
@@ -450,6 +502,11 @@ namespace GEthManager.Processing
                 Console.WriteLine($"Failed to execute command '{fileName} {arrguments}', error: {ex.JsonSerializeAsPrettyException()}");
                 return (output, error);
             }
+        }
+
+        public void Dispose()
+        {
+            this.TryCloseGeth(force: true, permanent: true);
         }
     }
 }
