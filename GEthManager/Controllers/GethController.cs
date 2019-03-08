@@ -50,16 +50,16 @@ namespace GEthManager.Controllers
         }
 
         [HttpGet("TryClose")]
-        public IActionResult TryClose(bool permanent = false, bool force = false, int? waitTimeout = null)
+        public IActionResult TryClose(bool permanent = false, bool force = false, int? waitTimeout = null, int sleep = 5000)
         {
-            var result = _pm.TryCloseGeth(force: force, permanent: permanent, waitTimeout: waitTimeout);
+            var result = _pm.TryCloseGeth(force: force, permanent: permanent, waitTimeout: waitTimeout, sleep: sleep);
             return StatusCode(StatusCodes.Status200OK, result);
         }
 
         [HttpGet("Close")]
-        public IActionResult Close(bool permanent = false, int? waitTimeout = null)
+        public IActionResult Close(bool permanent = false, int? waitTimeout = null, int sleep = 5000)
         {
-            var result = _pm.TryCloseGeth(force: true, permanent: permanent, waitTimeout: waitTimeout);
+            var result = _pm.TryCloseGeth(force: true, permanent: permanent, waitTimeout: waitTimeout, sleep: sleep);
             return StatusCode(result ? StatusCodes.Status200OK : StatusCodes.Status500InternalServerError, result);
         }
     }

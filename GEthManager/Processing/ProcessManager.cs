@@ -235,7 +235,7 @@ namespace GEthManager.Processing
 
         private bool gethPermanentHalt = false;
 
-        public bool TryCloseGeth(bool force = false, bool permanent = false, int? waitTimeout = null)
+        public bool TryCloseGeth(bool force = false, bool permanent = false, int? waitTimeout = null, int sleep = 5000)
         {
             if (permanent)
                 gethPermanentHalt = true;
@@ -245,6 +245,14 @@ namespace GEthManager.Processing
 
             try
             {
+                geth.StandardInput?.WriteLine("\x3");
+                Thread.Sleep(sleep);
+                Console.WriteLine($"Geth exited on Ctrl+C? - {this.IsGethExited()}");
+
+                geth.StandardInput?.Close();
+                Thread.Sleep(1000);
+                Console.WriteLine($"Geth exited on Input Close? - {this.IsGethExited()}");
+
                 geth.Close();
                 var waitForExit = geth.WaitForExit(waitTimeout ?? _cfg.gethCloseWait);
 

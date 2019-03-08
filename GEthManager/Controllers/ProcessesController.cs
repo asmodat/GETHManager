@@ -92,9 +92,9 @@ namespace GEthManager.Controllers
         }
 
         [HttpGet("Restart")]
-        public IActionResult Restart()
+        public IActionResult Restart(int waitForExit_ms = 5000, int sleep = 5000)
         {
-            var gracefullHalt = _pm.TryCloseGeth(force: false, permanent: true);
+            var gracefullHalt = _pm.TryCloseGeth(force: false, permanent: true, waitTimeout: waitForExit_ms, sleep: sleep);
 
             var results = _pm.TryRestart();
 
@@ -105,9 +105,9 @@ namespace GEthManager.Controllers
         }
 
         [HttpGet("Shutdown")]
-        public IActionResult Shutdown(int? haltTimeout = null, int timeout = 5000, int waitForExit_ms = 5000)
+        public IActionResult Shutdown(int? haltTimeout = null, int timeout = 5000, int waitForExit_ms = 5000, int sleep = 5000)
         {
-            var gracefullHalt = _pm.TryCloseGeth(force: false, permanent: true, waitTimeout: haltTimeout);
+            var gracefullHalt = _pm.TryCloseGeth(force: false, permanent: true, waitTimeout: haltTimeout, sleep: sleep);
 
             var results = _pm.TryShutdown(timeout: timeout, waitForExit_ms: waitForExit_ms);
 
