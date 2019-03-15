@@ -9,7 +9,7 @@ namespace GEthManager.Processing
 {
     public class ManagerConfig
     {
-        public string version { get; set; } = "0.1.3";
+        public string version { get; set; } = "0.1.4";
         public string login { get; set; }
         public string password { get; set; }
 

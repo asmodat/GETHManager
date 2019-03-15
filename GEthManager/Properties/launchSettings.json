@@ -18,7 +18,7 @@
     },
     "GEthManager": {
       "commandName": "Project",
-      "commandLineArgs": "8022 \"D:\\GLOBAL\\GEthManagerConfig.json\"",
+      "commandLineArgs": "8039 \"D:\\GLOBAL\\GEthManagerConfig.json\"",
       "launchBrowser": true,
       "launchUrl": "api/test/ping",
       "environmentVariables": {

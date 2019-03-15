@@ -15,6 +15,7 @@ using System.Collections.Generic;
 using System.Threading;
 using System.IO;
 using GEthManager.Extentions;
+using AsmodatStandard.Threading;
 
 namespace GEthManager.Processing
 {
@@ -147,7 +148,21 @@ namespace GEthManager.Processing
             return str.ReplaceMany(("INFO [", "\n\rINFO ["), ("WARN [", "\n\rWARN ["), ("WARNING [", "\n\rWARNING ["), ("ERROR [", "\n\rERROR ["));
         }
 
-        public bool IsGethExited() => geth?.HasExited ?? true;
+        public bool IsGethExited()
+        {
+            try
+            {
+                return geth?.HasExited ?? true;
+            }
+            catch(Exception ex)
+            {
+                if (processList.IsNullOrEmpty())
+                    return false;
+
+                lock(_locker)
+                    return !processList.Any(x => x != null && !x.processName.IsNullOrEmpty() && x.processName.ToLower() == "geth");
+            }
+        }
 
         public ProcessInfo[] GetRunningProcessesList() => processList;
 
@@ -162,10 +177,14 @@ namespace GEthManager.Processing
                 var processes = Process.GetProcesses();
                 if (processes.IsNullOrEmpty())
                 {
-                    processList = new ProcessInfo[0];
+                    lock (_locker)
+                        processList = new ProcessInfo[0];
+
                     return true;
                 }
-                processList = processes.Select(x => x.ToProcessInfo()).ToArray();
+
+                lock (_locker)
+                    processList = processes.Select(x => x.ToProcessInfo()).ToArray();
 
                 gethProcessInfo = new GEthProcessInfo(
                         hasExited: this.IsGethExited(),
@@ -235,6 +254,9 @@ namespace GEthManager.Processing
 
         private bool gethPermanentHalt = false;
 
+        public void TryWriteLine(string value) {  try  { geth?.StandardInput?.WriteLine(value); geth?.StandardInput.Flush(); }  catch  { } }
+        public void TryWriteLine(int value) { try { geth?.StandardInput?.WriteLine(value); geth?.StandardInput.Flush(); } catch { } }
+
         public bool TryCloseGeth(bool force = false, bool permanent = false, int? waitTimeout = null, int sleep = 5000)
         {
             if (permanent)
@@ -245,8 +267,28 @@ namespace GEthManager.Processing
 
             try
             {
-                geth.StandardInput?.WriteLine("\x3");
-                Thread.Sleep(sleep);
+
+                this.TryWriteLine("\x3");
+
+                var sw = Stopwatch.StartNew();
+
+                while (!IsGethExited() && sw.ElapsedMilliseconds < (waitTimeout ?? 5000))
+                {
+                    for (int i = 2600; i < 2685; i++)
+                    {
+                        this.TryWriteLine(i);
+                        if (IsGethExited())
+                            break;
+
+                        Thread.Sleep(10);
+                    }
+                    
+                    Thread.Sleep(1000);
+                }
+
+                if(!IsGethExited())
+                    Thread.Sleep(sleep);
+
                 Console.WriteLine($"Geth exited on Ctrl+C? - {this.IsGethExited()}");
 
                 geth.StandardInput?.Close();
@@ -254,15 +296,18 @@ namespace GEthManager.Processing
                 Console.WriteLine($"Geth exited on Input Close? - {this.IsGethExited()}");
 
                 geth.Close();
-                var waitForExit = geth.WaitForExit(waitTimeout ?? _cfg.gethCloseWait);
+                Thread.Sleep(1000);
 
-                if(!IsGethExited() && force)
+                if (!IsGethExited() && force)
+                {
                     geth.Kill();
+                    Console.WriteLine($"Geth exited on Kill? - {this.IsGethExited()}");
+                }
 
                 geth.Dispose();
 
                 if (!IsGethExited())
-                    throw new Exception($"Failed to Close GETH process, (WaitForExit:{waitForExit.ToString()}/{_cfg.gethCloseWait})");
+                    throw new Exception($"Failed to Close GETH process.");
                 else
                     return true;
             }
@@ -306,6 +351,7 @@ namespace GEthManager.Processing
                     gethReStarts.RemoveAt(0);
 
                 geth.Start();
+                geth.StandardInput.AutoFlush = true;
                 geth.BeginOutputReadLine();
                 geth.BeginErrorReadLine();
                 gethStart = DateTime.UtcNow;
